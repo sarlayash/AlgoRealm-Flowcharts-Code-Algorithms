@@ -58,6 +58,12 @@ export const TitleScreen: React.FC<TitleScreenProps> = ({
             Algo<span className="text-indigo-400">Realm</span>
           </h1>
 
+          <div className="flex items-center justify-center gap-2">
+            <span className="text-xs font-mono font-bold px-3 py-1 rounded-full bg-slate-900 border border-slate-800 text-amber-400">
+              ⚡ Powered by Kapil
+            </span>
+          </div>
+
           <p className="text-base sm:text-lg text-slate-400 max-w-xl mx-auto">
             A visual, interactive video game exploring programming foundations, flowchart logic,
             data structures, and computational algorithms from zero to grandmaster.

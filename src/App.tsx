@@ -13,6 +13,7 @@ import { TitleScreen } from './components/TitleScreen';
 import { OverworldMap } from './components/OverworldMap';
 import { GameView } from './components/GameView';
 import { LearnerGuideView } from './components/LearnerGuideView';
+import { Footer } from './components/Footer';
 import { BadgesModal } from './components/BadgesModal';
 import { CertificateModal } from './components/CertificateModal';
 import { VictoryModal } from './components/VictoryModal';
@@ -213,6 +214,8 @@ export default function App() {
         onUpdateSound={handleSoundUpdate}
         onOpenCertificate={() => setIsCertificateOpen(true)}
         onOpenBadges={() => setIsBadgesOpen(true)}
+        onLogoff={() => setCurrentView('TITLE')}
+        onResetProgress={handleResetProfile}
       />
 
       {/* Main Views */}
@@ -248,6 +251,16 @@ export default function App() {
           />
         )}
       </main>
+
+      {/* FAANG Standard Footer with Branding, Live Clock & Session Controls */}
+      <Footer
+        profile={profile}
+        onNavigate={(v) => setCurrentView(v)}
+        onOpenCertificate={() => setIsCertificateOpen(true)}
+        onOpenBadges={() => setIsBadgesOpen(true)}
+        onLogoff={() => setCurrentView('TITLE')}
+        onResetProgress={handleResetProfile}
+      />
 
       {/* Badges Trophy Hall Modal */}
       {profile && (

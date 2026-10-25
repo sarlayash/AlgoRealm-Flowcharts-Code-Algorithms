@@ -300,7 +300,7 @@ export function renderCertificateToCanvas(
   ctx.fillStyle = '#64748b';
   ctx.font = '400 16px "Plus Jakarta Sans", sans-serif';
   ctx.fillText(
-    'AlgoRealm Certification Authority · Permanent Hash Authenticated · Issued via Web Client Engine',
+    'AlgoRealm Certification Authority · Powered by Kapil · Permanent Hash Authenticated · Issued via Web Client Engine',
     width / 2,
     1480
   );

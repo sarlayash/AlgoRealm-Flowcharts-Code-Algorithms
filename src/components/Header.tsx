@@ -1,7 +1,21 @@
-import React from 'react';
-import { Volume2, VolumeX, Music, Award, Map, Play, Shield, BookOpen } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  Volume2,
+  VolumeX,
+  Music,
+  Award,
+  Map,
+  Play,
+  Shield,
+  BookOpen,
+  LogOut,
+  RotateCcw,
+  User,
+  ChevronDown,
+} from 'lucide-react';
 import { sound } from '../services/sound';
 import { PlayerProfile } from '../types/game';
+import { LiveClock } from './LiveClock';
 
 interface HeaderProps {
   currentView: 'TITLE' | 'GAME' | 'MAP' | 'GUIDE' | 'BADGES' | 'CERTIFICATE';
@@ -10,6 +24,8 @@ interface HeaderProps {
   onUpdateSound: (soundOn: boolean, musicOn: boolean) => void;
   onOpenCertificate: () => void;
   onOpenBadges: () => void;
+  onLogoff?: () => void;
+  onResetProgress?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -19,7 +35,23 @@ export const Header: React.FC<HeaderProps> = ({
   onUpdateSound,
   onOpenCertificate,
   onOpenBadges,
+  onLogoff,
+  onResetProgress,
 }) => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const toggleSfx = () => {
     if (!profile) return;
     const nextVal = !profile.soundEnabled;
@@ -37,21 +69,29 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="flex items-center justify-between gap-8 px-6 py-3.5 border-b border-slate-800 bg-slate-950/90 backdrop-blur-md sticky top-0 z-40">
-      {/* Zone 1: Single text element wordmark */}
-      <button
-        onClick={() => {
-          sound.playClick();
-          setCurrentView(profile ? 'GAME' : 'TITLE');
-        }}
-        className="text-lg font-bold tracking-tight text-white hover:text-indigo-400 transition-colors whitespace-nowrap shrink-0 flex items-center gap-2"
-      >
-        <span className="w-2.5 h-2.5 bg-indigo-500 rotate-45 inline-block"></span>
-        <span>AlgoRealm</span>
-      </button>
+    <header className="flex items-center justify-between gap-6 px-6 py-3 border-b border-slate-800 bg-slate-950/95 backdrop-blur-md sticky top-0 z-40">
+      {/* Zone 1: Brand Wordmark & Kapil Signature Tag */}
+      <div className="flex items-center gap-3 shrink-0">
+        <button
+          onClick={() => {
+            sound.playClick();
+            setCurrentView(profile ? 'GAME' : 'TITLE');
+          }}
+          className="text-lg font-bold tracking-tight text-white hover:text-indigo-400 transition-colors whitespace-nowrap flex items-center gap-2 cursor-pointer"
+        >
+          <span className="w-2.5 h-2.5 bg-indigo-500 rotate-45 inline-block"></span>
+          <span>AlgoRealm</span>
+        </button>
+
+        <span className="text-slate-600">·</span>
+
+        <span className="text-[11px] font-mono font-medium text-amber-400/90 whitespace-nowrap hidden sm:inline">
+          Powered by Kapil
+        </span>
+      </div>
 
       {/* Zone 2: 4–5 clean single-line text navigation links */}
-      <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-400">
+      <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-slate-400">
         <button
           onClick={() => {
             sound.playClick();
@@ -122,23 +162,19 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
       </nav>
 
-      {/* Zone 3: 1 primary action / audio controls */}
+      {/* Zone 3: Live Clock, Audio Controls, User Menu, and Primary Action */}
       <div className="flex items-center gap-3 shrink-0">
-        {profile && (
-          <div className="hidden sm:flex items-center gap-2 border border-slate-800 bg-slate-900/80 px-2.5 py-1 rounded-md text-xs font-mono text-slate-300">
-            <span className="text-indigo-400 font-semibold">{profile.name}</span>
-            <span className="text-slate-600">·</span>
-            <span className="text-amber-400 font-semibold">
-              {Object.values(profile.stars).reduce((a, b) => a + b, 0)} ★
-            </span>
-          </div>
-        )}
+        {/* Live Real-Time Clock */}
+        <div className="hidden xl:flex items-center border border-slate-800 bg-slate-900/60 px-2.5 py-1 rounded-md">
+          <LiveClock showIcon={true} />
+        </div>
 
+        {/* Audio Toggles */}
         {profile && (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5">
             <button
               onClick={toggleSfx}
-              title={profile.soundEnabled ? 'Mute SFX' : 'Enable SFX'}
+              title={profile.soundEnabled ? 'Mute Sound FX' : 'Enable Sound FX'}
               className="p-1.5 rounded-md hover:bg-slate-800 text-slate-400 hover:text-white transition-colors"
             >
               {profile.soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
@@ -155,12 +191,72 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         )}
 
+        {/* Profile Dropdown with Logoff & Reset Options */}
+        {profile && (
+          <div className="relative" ref={menuRef}>
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="flex items-center gap-2 border border-slate-800 bg-slate-900/90 hover:bg-slate-800/80 px-2.5 py-1.5 rounded-md text-xs font-mono text-slate-300 transition-colors cursor-pointer"
+            >
+              <User className="w-3.5 h-3.5 text-indigo-400" />
+              <span className="text-white font-semibold max-w-[90px] truncate">{profile.name}</span>
+              <span className="text-amber-400 font-bold">
+                {Object.values(profile.stars).reduce((a, b) => a + b, 0)}★
+              </span>
+              <ChevronDown className="w-3 h-3 text-slate-500" />
+            </button>
+
+            {isMenuOpen && (
+              <div className="absolute right-0 mt-2 w-56 bg-slate-900 border border-slate-800 rounded-xl shadow-2xl p-2 z-50 text-xs font-mono space-y-1 animate-in fade-in duration-150">
+                <div className="p-2 border-b border-slate-800 text-slate-400">
+                  <div className="text-[10px] uppercase tracking-wider text-slate-500">Active Coder</div>
+                  <div className="text-white font-bold truncate text-sm mt-0.5">{profile.name}</div>
+                  <div className="text-[11px] text-amber-400 mt-0.5">
+                    Level {profile.unlockedLevel} / 30 · {profile.completedLevels.length} Cleared
+                  </div>
+                </div>
+
+                {onLogoff && (
+                  <button
+                    onClick={() => {
+                      sound.playClick();
+                      setIsMenuOpen(false);
+                      onLogoff();
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-white flex items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <LogOut className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>Log Off / Switch Coder</span>
+                  </button>
+                )}
+
+                {onResetProgress && (
+                  <button
+                    onClick={() => {
+                      sound.playClick();
+                      setIsMenuOpen(false);
+                      if (confirm('Reset all saved level progress, stars, and badges? This cannot be undone.')) {
+                        onResetProgress();
+                      }
+                    }}
+                    className="w-full text-left px-3 py-2 rounded-lg hover:bg-rose-950/40 text-slate-400 hover:text-rose-300 flex items-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5 text-rose-400" />
+                    <span>Reset Journey Progress</span>
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Primary CTA: PNG Certificate */}
         <button
           onClick={() => {
             sound.playClick();
             onOpenCertificate();
           }}
-          className="px-3.5 py-1.5 text-xs font-semibold text-slate-900 bg-amber-400 hover:bg-amber-300 rounded-md transition-colors whitespace-nowrap shrink-0 shadow-sm flex items-center gap-1.5"
+          className="px-3.5 py-1.5 text-xs font-semibold text-slate-950 bg-amber-400 hover:bg-amber-300 rounded-md transition-colors whitespace-nowrap shrink-0 shadow-sm flex items-center gap-1.5 cursor-pointer"
         >
           <Award className="w-3.5 h-3.5" />
           <span>PNG Certificate</span>
