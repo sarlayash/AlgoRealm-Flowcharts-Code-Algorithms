@@ -1,0 +1,6 @@
+{
+  "name": "AlgoRealm: Flowcharts, Code & Algorithms",
+  "description": "Interactive 30-level algorithmic adventure video game exploring programming fundamentals, flowchart logic, data structures, and advanced algorithms with badges and PNG certificates.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
