@@ -6,23 +6,42 @@ import { sound } from '../services/sound';
 interface FlowchartPuzzleEditorProps {
   puzzle: FlowchartPuzzleConfig;
   onSuccess: (stepsUsed: number) => void;
+  onFailAttempt?: () => void;
+  failedAttempts?: number;
+  externalPlacedSlots?: Record<string, string>;
+  onOpenSolution?: () => void;
 }
 
 export const FlowchartPuzzleEditor: React.FC<FlowchartPuzzleEditorProps> = ({
   puzzle,
   onSuccess,
+  onFailAttempt,
+  failedAttempts = 0,
+  externalPlacedSlots,
+  onOpenSolution,
 }) => {
   // Map of slotId -> paletteNodeId
-  const [placedSlots, setPlacedSlots] = useState<Record<string, string>>({});
+  const [placedSlots, setPlacedSlots] = useState<Record<string, string>>(externalPlacedSlots || {});
   const [testResults, setTestResults] = useState<{ pass: boolean; msg: string }[] | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [activeSlotPulse, setActiveSlotPulse] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Sync external slots when provided (e.g. from Auto-Solve)
+  React.useEffect(() => {
+    if (externalPlacedSlots && Object.keys(externalPlacedSlots).length > 0) {
+      setPlacedSlots(externalPlacedSlots);
+      setTestResults(null);
+      setErrorMessage(null);
+    }
+  }, [externalPlacedSlots]);
 
   const slots = puzzle.slotNodes || [];
   const palette = puzzle.paletteNodes || [];
 
   const handlePlaceNode = (slotId: string, nodeId: string) => {
     sound.playClick();
+    setErrorMessage(null);
     setPlacedSlots((prev) => ({
       ...prev,
       [slotId]: nodeId,
@@ -32,6 +51,7 @@ export const FlowchartPuzzleEditor: React.FC<FlowchartPuzzleEditorProps> = ({
 
   const handleClearSlot = (slotId: string) => {
     sound.playClick();
+    setErrorMessage(null);
     setPlacedSlots((prev) => {
       const next = { ...prev };
       delete next[slotId];
@@ -42,17 +62,20 @@ export const FlowchartPuzzleEditor: React.FC<FlowchartPuzzleEditorProps> = ({
 
   const handleReset = () => {
     sound.playClick();
+    setErrorMessage(null);
     setPlacedSlots({});
     setTestResults(null);
   };
 
   const handleRunVerification = async () => {
     sound.playClick();
+    setErrorMessage(null);
     // Check if all slots are filled
     const unfilled = slots.find((s) => !placedSlots[s.id]);
     if (unfilled) {
       sound.playFailure();
-      alert(`Please assign a node to "${unfilled.label}" before running verification.`);
+      setErrorMessage(`Please assign a node to "${unfilled.label}" before running verification.`);
+      onFailAttempt?.();
       return;
     }
 
@@ -103,16 +126,35 @@ export const FlowchartPuzzleEditor: React.FC<FlowchartPuzzleEditorProps> = ({
       }, 700);
     } else {
       sound.playFailure();
+      setErrorMessage('Flowchart logic failed one or more verification test cases. Check node choices.');
+      onFailAttempt?.();
     }
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
-      {/* Left: Palette of Flowchart Nodes */}
-      <div className="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between space-y-4">
-        <div>
-          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-            <h3 className="text-sm font-bold text-white font-mono">FLOWCHART NODE PALETTE</h3>
+    <div className="space-y-4">
+      {errorMessage && (
+        <div className="p-3 bg-rose-950/70 border border-rose-500/40 text-rose-200 rounded-xl text-xs font-mono flex items-center justify-between gap-3 animate-in fade-in">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setErrorMessage(null)}
+            className="text-slate-400 hover:text-white p-1"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+        {/* Left: Palette of Flowchart Nodes */}
+        <div className="lg:col-span-5 bg-slate-900/90 border border-slate-800 rounded-2xl p-5 flex flex-col justify-between space-y-4">
+          <div>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+              <h3 className="text-sm font-bold text-white font-mono">FLOWCHART NODE PALETTE</h3>
             <span className="text-xs text-slate-400">Available Components</span>
           </div>
 
@@ -284,5 +326,6 @@ export const FlowchartPuzzleEditor: React.FC<FlowchartPuzzleEditorProps> = ({
         )}
       </div>
     </div>
-  );
+  </div>
+);
 };

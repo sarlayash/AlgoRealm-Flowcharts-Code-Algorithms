@@ -111,6 +111,13 @@ export interface AlgoArenaConfig {
   targetNodeId?: string;
 }
 
+export interface LevelSolution {
+  explanation: string;
+  gridCommands?: ActionCommandType[];
+  flowchartSlots?: Record<string, string>;
+  algoStepsDescription?: string[];
+}
+
 export interface LevelDefinition {
   id: number;
   title: string;
@@ -136,6 +143,7 @@ export interface LevelDefinition {
   };
   flowchartPuzzle?: FlowchartPuzzleConfig;
   algoArena?: AlgoArenaConfig;
+  solution?: LevelSolution;
 }
 
 export interface PlayerProfile {

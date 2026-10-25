@@ -36,6 +36,24 @@ export default function App() {
 
   const [currentView, setCurrentView] = useState<'TITLE' | 'GAME' | 'MAP' | 'GUIDE'>('TITLE');
   const [activeLevelId, setActiveLevelId] = useState<number>(1);
+  const [failedAttemptsByLevel, setFailedAttemptsByLevel] = useState<Record<number, number>>(() => {
+    try {
+      const raw = localStorage.getItem('algorealm_failed_attempts_by_level');
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  const handleRecordFailure = (levelId: number) => {
+    setFailedAttemptsByLevel((prev) => {
+      const next = { ...prev, [levelId]: (prev[levelId] || 0) + 1 };
+      try {
+        localStorage.setItem('algorealm_failed_attempts_by_level', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
 
   // Modals
   const [isBadgesOpen, setIsBadgesOpen] = useState(false);
@@ -95,6 +113,8 @@ export default function App() {
 
   const handleResetProfile = () => {
     localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem('algorealm_failed_attempts_by_level');
+    setFailedAttemptsByLevel({});
     setProfile(null);
     setCurrentView('TITLE');
     setActiveLevelId(1);
@@ -244,6 +264,8 @@ export default function App() {
           <GameView
             level={currentLevelDef}
             profile={profile}
+            failedAttempts={failedAttemptsByLevel[activeLevelId] || 0}
+            onRecordFailure={() => handleRecordFailure(activeLevelId)}
             onLevelComplete={handleLevelComplete}
             onGoToMap={() => setCurrentView('MAP')}
             onSelectLevel={handleSelectLevel}

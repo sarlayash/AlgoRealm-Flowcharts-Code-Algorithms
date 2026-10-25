@@ -137,7 +137,7 @@ export const LearnerGuideView: React.FC<LearnerGuideViewProps> = ({
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
                   <div className="text-xs font-bold text-indigo-400 font-mono">3-STAR SCORING SYSTEM</div>
                   <p className="text-xs text-slate-300 leading-relaxed">
@@ -148,9 +148,17 @@ export const LearnerGuideView: React.FC<LearnerGuideViewProps> = ({
                 </div>
 
                 <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
-                  <div className="text-xs font-bold text-amber-400 font-mono">AUTOMATIC CLOUD SAVE</div>
+                  <div className="text-xs font-bold text-amber-400 font-mono">2-FAILURE SOLUTION UNLOCK</div>
                   <p className="text-xs text-slate-300 leading-relaxed">
-                    Your coder name, unlocked levels, stars, and badges are automatically saved in
+                    Stuck on a challenge? After <strong>2 failed attempts</strong>, the full solution unlocks automatically!
+                    Inspect the CS explanation, examine step-by-step commands, or use <strong>Auto-Solve</strong>.
+                  </p>
+                </div>
+
+                <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
+                  <div className="text-xs font-bold text-emerald-400 font-mono">AUTOMATIC CLOUD SAVE</div>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    Your coder name, unlocked levels, stars, badges, and unlock records are automatically saved in
                     your browser's local memory. You can resume anytime!
                   </p>
                 </div>

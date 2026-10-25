@@ -6,46 +6,50 @@ import { sound } from '../services/sound';
 interface AlgorithmPlaygroundProps {
   config: AlgoArenaConfig;
   onSuccess: (stepsUsed: number) => void;
+  onFailAttempt?: () => void;
+  failedAttempts?: number;
 }
 
 export const AlgorithmPlayground: React.FC<AlgorithmPlaygroundProps> = ({
   config,
   onSuccess,
+  onFailAttempt,
+  failedAttempts = 0,
 }) => {
   const { subType } = config;
 
   if (subType === 'BINARY_SEARCH') {
-    return <BinarySearchGame config={config} onSuccess={onSuccess} />;
+    return <BinarySearchGame config={config} onSuccess={onSuccess} onFailAttempt={onFailAttempt} />;
   }
   if (subType === 'BUBBLE_SORT') {
-    return <BubbleSortGame config={config} onSuccess={onSuccess} />;
+    return <BubbleSortGame config={config} onSuccess={onSuccess} onFailAttempt={onFailAttempt} />;
   }
   if (subType === 'SELECTION_SORT') {
-    return <SelectionSortGame config={config} onSuccess={onSuccess} />;
+    return <SelectionSortGame config={config} onSuccess={onSuccess} onFailAttempt={onFailAttempt} />;
   }
   if (subType === 'STACK_LIFO') {
-    return <StackLifoGame config={config} onSuccess={onSuccess} />;
+    return <StackLifoGame config={config} onSuccess={onSuccess} onFailAttempt={onFailAttempt} />;
   }
   if (subType === 'QUEUE_FIFO') {
-    return <QueueFifoGame config={config} onSuccess={onSuccess} />;
+    return <QueueFifoGame config={config} onSuccess={onSuccess} onFailAttempt={onFailAttempt} />;
   }
   if (subType === 'HASH_MAP') {
-    return <HashMapGame config={config} onSuccess={onSuccess} />;
+    return <HashMapGame config={config} onSuccess={onSuccess} onFailAttempt={onFailAttempt} />;
   }
   if (subType === 'LINKED_LIST') {
-    return <LinkedListGame config={config} onSuccess={onSuccess} />;
+    return <LinkedListGame config={config} onSuccess={onSuccess} onFailAttempt={onFailAttempt} />;
   }
   if (subType === 'DIJKSTRA_GRAPH') {
-    return <DijkstraGame config={config} onSuccess={onSuccess} />;
+    return <DijkstraGame config={config} onSuccess={onSuccess} onFailAttempt={onFailAttempt} />;
   }
   if (subType === 'BST_TRAVERSAL') {
-    return <BstTraversalGame config={config} onSuccess={onSuccess} />;
+    return <BstTraversalGame config={config} onSuccess={onSuccess} onFailAttempt={onFailAttempt} />;
   }
   if (subType === 'DYNAMIC_PROGRAMMING') {
-    return <DynamicProgrammingGame config={config} onSuccess={onSuccess} />;
+    return <DynamicProgrammingGame config={config} onSuccess={onSuccess} onFailAttempt={onFailAttempt} />;
   }
   if (subType === 'BIG_O_RACE') {
-    return <BigORaceGame config={config} onSuccess={onSuccess} />;
+    return <BigORaceGame config={config} onSuccess={onSuccess} onFailAttempt={onFailAttempt} />;
   }
 
   return <div>Unknown Arena Type</div>;
@@ -54,10 +58,11 @@ export const AlgorithmPlayground: React.FC<AlgorithmPlaygroundProps> = ({
 // =========================================================================
 // 1. BINARY SEARCH RADAR
 // =========================================================================
-const BinarySearchGame: React.FC<{ config: AlgoArenaConfig; onSuccess: (s: number) => void }> = ({
-  config,
-  onSuccess,
-}) => {
+const BinarySearchGame: React.FC<{
+  config: AlgoArenaConfig;
+  onSuccess: (s: number) => void;
+  onFailAttempt?: () => void;
+}> = ({ config, onSuccess, onFailAttempt }) => {
   const arr = config.initialArray || [3, 9, 14, 22, 35, 47, 58, 66, 73, 85, 91, 99];
   const target = config.targetValue || 47;
 
@@ -181,10 +186,11 @@ const BinarySearchGame: React.FC<{ config: AlgoArenaConfig; onSuccess: (s: numbe
 // =========================================================================
 // 2. BUBBLE SORT CRANE
 // =========================================================================
-const BubbleSortGame: React.FC<{ config: AlgoArenaConfig; onSuccess: (s: number) => void }> = ({
-  config,
-  onSuccess,
-}) => {
+const BubbleSortGame: React.FC<{
+  config: AlgoArenaConfig;
+  onSuccess: (s: number) => void;
+  onFailAttempt?: () => void;
+}> = ({ config, onSuccess, onFailAttempt }) => {
   const initial = config.initialArray || [50, 20, 40, 10, 30];
   const [array, setArray] = useState<number[]>([...initial]);
   const [cursor, setCursor] = useState(0);
@@ -287,18 +293,21 @@ const BubbleSortGame: React.FC<{ config: AlgoArenaConfig; onSuccess: (s: number)
 // =========================================================================
 // 3. SELECTION SORT HARVESTER
 // =========================================================================
-const SelectionSortGame: React.FC<{ config: AlgoArenaConfig; onSuccess: (s: number) => void }> = ({
-  config,
-  onSuccess,
-}) => {
+const SelectionSortGame: React.FC<{
+  config: AlgoArenaConfig;
+  onSuccess: (s: number) => void;
+  onFailAttempt?: () => void;
+}> = ({ config, onSuccess, onFailAttempt }) => {
   const initial = config.initialArray || [64, 25, 12, 22, 11];
   const [array, setArray] = useState<number[]>([...initial]);
   const [sortedIndex, setSortedIndex] = useState(0);
+  const [errorNotice, setErrorNotice] = useState<string | null>(null);
 
   const isSorted = array.every((v, i, a) => !i || a[i - 1] <= v);
 
   const handlePickMin = (idx: number) => {
     sound.playClick();
+    setErrorNotice(null);
     // Verify if idx is indeed the minimum in array[sortedIndex...]
     const remaining = array.slice(sortedIndex);
     const trueMin = Math.min(...remaining);
@@ -319,12 +328,18 @@ const SelectionSortGame: React.FC<{ config: AlgoArenaConfig; onSuccess: (s: numb
       }
     } else {
       sound.playFailure();
-      alert(`Value ${array[idx]} is not the minimum in the unsorted range! Look closely.`);
+      setErrorNotice(`Value ${array[idx]} is not the minimum in the unsorted range! Look closely.`);
+      onFailAttempt?.();
     }
   };
 
   return (
     <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 space-y-6">
+      {errorNotice && (
+        <div className="p-3 bg-rose-950/70 border border-rose-500/40 text-rose-200 rounded-xl text-xs font-mono animate-in fade-in">
+          ⚠️ {errorNotice}
+        </div>
+      )}
       <div className="flex justify-between items-center border-b border-slate-800 pb-4">
         <div>
           <div className="text-xs font-mono text-indigo-400">SELECTION SORT HARVESTER</div>
@@ -366,9 +381,11 @@ const SelectionSortGame: React.FC<{ config: AlgoArenaConfig; onSuccess: (s: numb
 // =========================================================================
 // 4. STACK LIFO TOWER
 // =========================================================================
-const StackLifoGame: React.FC<{ config: AlgoArenaConfig; onSuccess: (s: number) => void }> = ({
-  onSuccess,
-}) => {
+const StackLifoGame: React.FC<{
+  config: AlgoArenaConfig;
+  onSuccess: (s: number) => void;
+  onFailAttempt?: () => void;
+}> = ({ onSuccess, onFailAttempt }) => {
   const [stack, setStack] = useState<number[]>([]);
   const [popped, setPopped] = useState<number[]>([]);
   const goalPopped = [40, 25, 10]; // Popped in reverse of push [10, 25, 40]
@@ -469,8 +486,13 @@ const StackLifoGame: React.FC<{ config: AlgoArenaConfig; onSuccess: (s: number) 
 // =========================================================================
 // 5. QUEUE FIFO PIPELINE
 // =========================================================================
-const QueueFifoGame: React.FC<{ config: AlgoArenaConfig; onSuccess: (s: number) => void }> = ({
+const QueueFifoGame: React.FC<{
+  config: AlgoArenaConfig;
+  onSuccess: (s: number) => void;
+  onFailAttempt?: () => void;
+}> = ({
   onSuccess,
+  onFailAttempt,
 }) => {
   const [queue, setQueue] = useState<number[]>([]);
   const [dispatched, setDispatched] = useState<number[]>([]);
@@ -557,9 +579,11 @@ const QueueFifoGame: React.FC<{ config: AlgoArenaConfig; onSuccess: (s: number) 
 // =========================================================================
 // 6. HASH MAP
 // =========================================================================
-const HashMapGame: React.FC<{ config: AlgoArenaConfig; onSuccess: (s: number) => void }> = ({
-  onSuccess,
-}) => {
+const HashMapGame: React.FC<{
+  config: AlgoArenaConfig;
+  onSuccess: (s: number) => void;
+  onFailAttempt?: () => void;
+}> = ({ onSuccess, onFailAttempt }) => {
   const keys = ['ADMIN', 'CIPHER', 'AUTH', 'ROOT'];
   // Hash function: Sum of ASCII codes % 4
   const [buckets, setBuckets] = useState<Record<number, string[]>>({ 0: [], 1: [], 2: [], 3: [] });
@@ -631,10 +655,11 @@ const HashMapGame: React.FC<{ config: AlgoArenaConfig; onSuccess: (s: number) =>
 // =========================================================================
 // 7. LINKED LIST POINTER BRIDGE
 // =========================================================================
-const LinkedListGame: React.FC<{ config: AlgoArenaConfig; onSuccess: (s: number) => void }> = ({
-  config,
-  onSuccess,
-}) => {
+const LinkedListGame: React.FC<{
+  config: AlgoArenaConfig;
+  onSuccess: (s: number) => void;
+  onFailAttempt?: () => void;
+}> = ({ config, onSuccess, onFailAttempt }) => {
   const nodes = config.nodes || [
     { id: 'head', label: 'Head', x: 0, y: 0, val: 5 },
     { id: 'node_a', label: 'Node A', x: 0, y: 0, val: 15 },
@@ -705,10 +730,13 @@ const LinkedListGame: React.FC<{ config: AlgoArenaConfig; onSuccess: (s: number)
 // =========================================================================
 // 8. DIJKSTRA GRAPH ROUTER
 // =========================================================================
-const DijkstraGame: React.FC<{ config: AlgoArenaConfig; onSuccess: (s: number) => void }> = ({
-  onSuccess,
-}) => {
+const DijkstraGame: React.FC<{
+  config: AlgoArenaConfig;
+  onSuccess: (s: number) => void;
+  onFailAttempt?: () => void;
+}> = ({ onSuccess, onFailAttempt }) => {
   const [selectedPath, setSelectedPath] = useState<string[]>(['A']);
+  const [errorNotice, setErrorNotice] = useState<string | null>(null);
   const totalCost = selectedPath.reduce((acc, curr, idx) => {
     if (idx === 0) return 0;
     const prev = selectedPath[idx - 1];
@@ -722,6 +750,7 @@ const DijkstraGame: React.FC<{ config: AlgoArenaConfig; onSuccess: (s: number) =
 
   const handleStepTo = (node: string) => {
     sound.playClick();
+    setErrorNotice(null);
     const nextPath = [...selectedPath, node];
     setSelectedPath(nextPath);
 
@@ -732,7 +761,8 @@ const DijkstraGame: React.FC<{ config: AlgoArenaConfig; onSuccess: (s: number) =
         setTimeout(() => onSuccess(3), 600);
       } else {
         sound.playFailure();
-        alert('Path completed, but there is a shorter weighted path! Try again.');
+        setErrorNotice('Path completed, but there is a shorter weighted path! Try again.');
+        onFailAttempt?.();
         setSelectedPath(['A']);
       }
     }
@@ -740,6 +770,11 @@ const DijkstraGame: React.FC<{ config: AlgoArenaConfig; onSuccess: (s: number) =
 
   return (
     <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 space-y-6">
+      {errorNotice && (
+        <div className="p-3 bg-rose-950/70 border border-rose-500/40 text-rose-200 rounded-xl text-xs font-mono animate-in fade-in">
+          ⚠️ {errorNotice}
+        </div>
+      )}
       <div className="border-b border-slate-800 pb-3">
         <div className="text-xs font-mono text-indigo-400">GRAPH SHORTEST PATH</div>
         <h3 className="text-xl font-bold text-white flex items-center gap-2">
@@ -807,21 +842,26 @@ const DijkstraGame: React.FC<{ config: AlgoArenaConfig; onSuccess: (s: number) =
 // =========================================================================
 // 9. BST TRAVERSAL
 // =========================================================================
-const BstTraversalGame: React.FC<{ config: AlgoArenaConfig; onSuccess: (s: number) => void }> = ({
-  onSuccess,
-}) => {
+const BstTraversalGame: React.FC<{
+  config: AlgoArenaConfig;
+  onSuccess: (s: number) => void;
+  onFailAttempt?: () => void;
+}> = ({ onSuccess, onFailAttempt }) => {
   const [visited, setVisited] = useState<number[]>([]);
+  const [errorNotice, setErrorNotice] = useState<string | null>(null);
   const targetInOrder = [5, 10, 15, 20, 30];
 
   const handlePickRune = (val: number) => {
     sound.playClick();
+    setErrorNotice(null);
     const nextVisited = [...visited, val];
     setVisited(nextVisited);
 
     const isCorrectSoFar = nextVisited.every((v, i) => v === targetInOrder[i]);
     if (!isCorrectSoFar) {
       sound.playFailure();
-      alert(`Invalid In-Order sequence! Remember: Left Subtree -> Root -> Right Subtree.`);
+      setErrorNotice('Invalid In-Order sequence! Remember: Left Subtree -> Root -> Right Subtree.');
+      onFailAttempt?.();
       setVisited([]);
       return;
     }
@@ -834,6 +874,11 @@ const BstTraversalGame: React.FC<{ config: AlgoArenaConfig; onSuccess: (s: numbe
 
   return (
     <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 space-y-6">
+      {errorNotice && (
+        <div className="p-3 bg-rose-950/70 border border-rose-500/40 text-rose-200 rounded-xl text-xs font-mono animate-in fade-in">
+          ⚠️ {errorNotice}
+        </div>
+      )}
       <div className="border-b border-slate-800 pb-3">
         <div className="text-xs font-mono text-indigo-400">TREE DATA STRUCTURE</div>
         <h3 className="text-xl font-bold text-white flex items-center gap-2">
@@ -875,9 +920,11 @@ const BstTraversalGame: React.FC<{ config: AlgoArenaConfig; onSuccess: (s: numbe
 // =========================================================================
 // 10. DYNAMIC PROGRAMMING
 // =========================================================================
-const DynamicProgrammingGame: React.FC<{ config: AlgoArenaConfig; onSuccess: (s: number) => void }> = ({
-  onSuccess,
-}) => {
+const DynamicProgrammingGame: React.FC<{
+  config: AlgoArenaConfig;
+  onSuccess: (s: number) => void;
+  onFailAttempt?: () => void;
+}> = ({ onSuccess, onFailAttempt }) => {
   const costs = [1, 100, 1, 1, 1, 100, 1];
   const [currentStep, setCurrentStep] = useState(0);
   const [totalCost, setTotalCost] = useState(costs[0]);
@@ -948,25 +995,35 @@ const DynamicProgrammingGame: React.FC<{ config: AlgoArenaConfig; onSuccess: (s:
 // =========================================================================
 // 11. BIG-O TIME RACE
 // =========================================================================
-const BigORaceGame: React.FC<{ config: AlgoArenaConfig; onSuccess: (s: number) => void }> = ({
-  onSuccess,
-}) => {
+const BigORaceGame: React.FC<{
+  config: AlgoArenaConfig;
+  onSuccess: (s: number) => void;
+  onFailAttempt?: () => void;
+}> = ({ onSuccess, onFailAttempt }) => {
   const [selectedAlgo, setSelectedAlgo] = useState<string | null>(null);
+  const [errorNotice, setErrorNotice] = useState<string | null>(null);
 
   const handleSelect = (complexity: string) => {
     sound.playClick();
+    setErrorNotice(null);
     setSelectedAlgo(complexity);
     if (complexity === 'LOG_N') {
       sound.playSuccess();
       setTimeout(() => onSuccess(3), 600);
     } else {
       sound.playFailure();
-      alert('Time limit exceeded! Quadratic algorithms cannot scale to 1,000,000 items.');
+      setErrorNotice('Time limit exceeded! Quadratic or factorial algorithms cannot scale to 1,000,000 items.');
+      onFailAttempt?.();
     }
   };
 
   return (
     <div className="bg-slate-900/90 border border-slate-800 rounded-2xl p-6 space-y-6">
+      {errorNotice && (
+        <div className="p-3 bg-rose-950/70 border border-rose-500/40 text-rose-200 rounded-xl text-xs font-mono animate-in fade-in">
+          ⚠️ {errorNotice}
+        </div>
+      )}
       <div className="border-b border-slate-800 pb-3">
         <div className="text-xs font-mono text-indigo-400">COMPUTATIONAL COMPLEXITY</div>
         <h3 className="text-xl font-bold text-white flex items-center gap-2">

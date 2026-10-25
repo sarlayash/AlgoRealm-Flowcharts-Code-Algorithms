@@ -1,25 +1,49 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, StepForward, RotateCcw, Lightbulb, Map, Trash2, Plus, FastForward, Check, ChevronLeft, ChevronRight, HelpCircle, BookOpen } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Play, RotateCcw, Lightbulb, Map, Trash2, Plus, ChevronLeft, ChevronRight, HelpCircle, BookOpen, X, AlertCircle } from 'lucide-react';
 import { LevelDefinition, PlayerProfile, CommandBlock, ActionCommandType, Direction } from '../types/game';
 import { GameCanvas } from './GameCanvas';
 import { FlowchartVisualizer } from './FlowchartVisualizer';
 import { FlowchartPuzzleEditor } from './FlowchartPuzzleEditor';
 import { AlgorithmPlayground } from './AlgorithmPlayground';
+import { SolutionRevealModal } from './SolutionRevealModal';
+import { LEVEL_SOLUTIONS } from '../data/solutions';
 import { AVATARS } from '../data/avatars';
 import { sound } from '../services/sound';
 
 interface GameViewProps {
   level: LevelDefinition;
   profile: PlayerProfile;
+  failedAttempts?: number;
+  onRecordFailure?: () => void;
   onLevelComplete: (levelId: number, stepsUsed: number) => void;
   onGoToMap: () => void;
   onSelectLevel: (levelId: number) => void;
   onOpenGuide?: () => void;
 }
 
+const COMMAND_LABEL_MAP: Record<ActionCommandType, string> = {
+  FORWARD: 'Step Forward',
+  TURN_LEFT: 'Turn Left 90°',
+  TURN_RIGHT: 'Turn Right 90°',
+  COLLECT: 'Collect Crystal',
+  IF_WALL_AHEAD: 'If Wall Ahead -> Turn Right',
+  IF_GEM_AHEAD: 'If Gem Ahead -> Turn Left',
+  WHILE_NOT_GOAL: 'While Not At Goal',
+  LOOP_START: 'Loop Start',
+  LOOP_END: 'Loop End',
+  SET_VARIABLE: 'Set Variable X = 1',
+  INCREMENT_VARIABLE: 'Increment Register X++',
+  DECREMENT_VARIABLE: 'Decrement Counter X--',
+  SWAP: 'Swap Items',
+  PUSH: 'Push Stone',
+  POP: 'Pop Stone',
+};
+
 export const GameView: React.FC<GameViewProps> = ({
   level,
   profile,
+  failedAttempts,
+  onRecordFailure,
   onLevelComplete,
   onGoToMap,
   onSelectLevel,
@@ -31,6 +55,23 @@ export const GameView: React.FC<GameViewProps> = ({
   const [activeStepIndex, setActiveStepIndex] = useState(-1);
   const [simSpeed, setSimSpeed] = useState<number>(1); // 1 = normal, 2 = fast, 4 = turbo
   const [showHint, setShowHint] = useState(false);
+  const [isSolutionModalOpen, setIsSolutionModalOpen] = useState(false);
+  const [statusNotification, setStatusNotification] = useState<string | null>(null);
+
+  // External slots for flowchart puzzle auto-wiring
+  const [externalFlowchartSlots, setExternalFlowchartSlots] = useState<Record<string, string> | undefined>(undefined);
+
+  // Internal failed attempts fallback if not supplied by parent
+  const [localFailedAttempts, setLocalFailedAttempts] = useState<number>(() => {
+    try {
+      const raw = localStorage.getItem(`algorealm_fail_lvl_${level.id}`);
+      return raw ? parseInt(raw, 10) : 0;
+    } catch {
+      return 0;
+    }
+  });
+
+  const currentFailedAttempts = failedAttempts !== undefined ? failedAttempts : localFailedAttempts;
 
   // Rover Simulation State
   const initialPlayerStart = level.grid?.playerStart || { x: 0, y: 0, dir: 'RIGHT' };
@@ -44,6 +85,15 @@ export const GameView: React.FC<GameViewProps> = ({
     handleResetSimulation();
     setCommands([]);
     setShowHint(false);
+    setIsSolutionModalOpen(false);
+    setStatusNotification(null);
+    setExternalFlowchartSlots(undefined);
+    try {
+      const raw = localStorage.getItem(`algorealm_fail_lvl_${level.id}`);
+      setLocalFailedAttempts(raw ? parseInt(raw, 10) : 0);
+    } catch {
+      setLocalFailedAttempts(0);
+    }
   }, [level.id]);
 
   const avatar = AVATARS.find((a) => a.id === profile.avatarId) || AVATARS[0];
@@ -57,33 +107,40 @@ export const GameView: React.FC<GameViewProps> = ({
     setStepsCount(0);
   };
 
+  const handleRecordFail = (reasonMsg?: string) => {
+    sound.playFailure();
+    const nextVal = currentFailedAttempts + 1;
+    setLocalFailedAttempts(nextVal);
+    try {
+      localStorage.setItem(`algorealm_fail_lvl_${level.id}`, nextVal.toString());
+    } catch {}
+    onRecordFailure?.();
+
+    if (nextVal >= 2) {
+      setStatusNotification(
+        reasonMsg
+          ? `${reasonMsg} (Attempt ${nextVal} Failed) — 💡 Solution Unlocked! Click "Reveal Solution" above to view full code & auto-solve.`
+          : `Attempt ${nextVal} Failed — 💡 Solution Unlocked! Click "Reveal Solution" above.`
+      );
+    } else {
+      setStatusNotification(
+        reasonMsg
+          ? `${reasonMsg} (Attempt ${nextVal}/2 Failed — Solution unlocks after 2 failed attempts)`
+          : `Attempt ${nextVal}/2 Failed — Solution unlocks after 2 failed attempts.`
+      );
+    }
+  };
+
   // Add a command block
   const handleAddCommand = (type: ActionCommandType) => {
     if (isSimulating) return;
     sound.playClick();
-
-    const labelMap: Record<ActionCommandType, string> = {
-      FORWARD: 'Step Forward',
-      TURN_LEFT: 'Turn Left 90°',
-      TURN_RIGHT: 'Turn Right 90°',
-      COLLECT: 'Collect Crystal',
-      IF_WALL_AHEAD: 'If Wall Ahead -> Turn Right',
-      IF_GEM_AHEAD: 'If Gem Ahead -> Turn Left',
-      WHILE_NOT_GOAL: 'While Not At Goal',
-      LOOP_START: 'Loop Start',
-      LOOP_END: 'Loop End',
-      SET_VARIABLE: 'Set Variable X = 1',
-      INCREMENT_VARIABLE: 'Increment Register X++',
-      DECREMENT_VARIABLE: 'Decrement Counter X--',
-      SWAP: 'Swap Items',
-      PUSH: 'Push Stone',
-      POP: 'Pop Stone',
-    };
+    setStatusNotification(null);
 
     const newBlock: CommandBlock = {
       id: `${type}_${Date.now()}_${Math.random()}`,
       type,
-      label: labelMap[type] || type,
+      label: COMMAND_LABEL_MAP[type] || type,
       iconName: type,
       color: type.startsWith('IF_') || type.startsWith('WHILE_') ? 'amber' : 'indigo',
     };
@@ -94,12 +151,14 @@ export const GameView: React.FC<GameViewProps> = ({
   const handleRemoveCommand = (idx: number) => {
     if (isSimulating) return;
     sound.playClick();
+    setStatusNotification(null);
     setCommands(commands.filter((_, i) => i !== idx));
   };
 
   const handleClearCommands = () => {
     if (isSimulating) return;
     sound.playClick();
+    setStatusNotification(null);
     setCommands([]);
     handleResetSimulation();
   };
@@ -139,8 +198,11 @@ export const GameView: React.FC<GameViewProps> = ({
         sound.playSuccess();
         onLevelComplete(level.id, totalSteps);
       } else {
-        sound.playFailure();
-        alert('Commands finished, but goal or crystals not yet satisfied. Check your logic and try again!');
+        handleRecordFail(
+          !atGoal
+            ? 'Execution ended: Rover did not reach the Goal Terminal.'
+            : 'Execution ended: Not all required Data Gems were collected.'
+        );
       }
       return;
     }
@@ -181,12 +243,13 @@ export const GameView: React.FC<GameViewProps> = ({
       }
 
       if (isOutOfBounds || wallCell || doorLocked) {
-        sound.playFailure();
         setIsSimulating(false);
-        alert(
+        handleRecordFail(
           doorLocked
             ? `Security Door is locked! Variable register must reach ≥ ${doorCell?.value}.`
-            : 'Collision detected! Rover hit a wall or boundary.'
+            : isOutOfBounds
+            ? 'Collision detected! Rover attempted to march outside grid boundary.'
+            : 'Collision detected! Rover crashed into a fortress wall block.'
         );
         return;
       }
@@ -246,7 +309,6 @@ export const GameView: React.FC<GameViewProps> = ({
       const isWall =
         tx < 0 || tx >= level.grid.width || ty < 0 || ty >= level.grid.height;
       if (isWall) {
-        // execute condition branch: turn right
         const rightRot: Record<Direction, Direction> = {
           UP: 'RIGHT',
           RIGHT: 'DOWN',
@@ -256,10 +318,8 @@ export const GameView: React.FC<GameViewProps> = ({
         nextPos.dir = rightRot[currentPos.dir];
       }
     } else if (cmd.type === 'WHILE_NOT_GOAL') {
-      // Automatically step forward while not at goal
       const isAtGoal = currentPos.x === level.grid.targetGoal.x && currentPos.y === level.grid.targetGoal.y;
       if (!isAtGoal) {
-        // Step forward in direction
         let dx = 0;
         let dy = 0;
         if (currentPos.dir === 'RIGHT') dx = 1;
@@ -268,9 +328,8 @@ export const GameView: React.FC<GameViewProps> = ({
         if (currentPos.dir === 'UP') dy = -1;
         nextPos.x = currentPos.x + dx;
         nextPos.y = currentPos.y + dy;
-        // Keep repeating this while block until goal reached
         if (nextPos.x !== level.grid.targetGoal.x || nextPos.y !== level.grid.targetGoal.y) {
-          nextCmdIdx = cmdIdx; // loop back
+          nextCmdIdx = cmdIdx;
         }
       }
     }
@@ -297,10 +356,11 @@ export const GameView: React.FC<GameViewProps> = ({
   const handleStartSimulation = () => {
     if (commands.length === 0) {
       sound.playFailure();
-      alert('Add instructions from the command palette below before running the algorithm!');
+      setStatusNotification('Add instructions from the command palette below before running the algorithm!');
       return;
     }
     sound.playClick();
+    setStatusNotification(null);
     handleResetSimulation();
     setIsSimulating(true);
 
@@ -314,6 +374,60 @@ export const GameView: React.FC<GameViewProps> = ({
         0
       );
     }, 200);
+  };
+
+  // Auto-Solve & Load Handler triggered from SolutionRevealModal
+  const handleApplySolutionAndSolve = () => {
+    const sol = LEVEL_SOLUTIONS[level.id];
+    if (!sol) return;
+
+    if (level.mode === 'GRID_BOT' && sol.gridCommands) {
+      const blocks: CommandBlock[] = sol.gridCommands.map((cmdType, idx) => ({
+        id: `sol_${cmdType}_${idx}_${Date.now()}`,
+        type: cmdType,
+        label: COMMAND_LABEL_MAP[cmdType] || cmdType,
+        iconName: cmdType,
+        color: cmdType.startsWith('IF_') || cmdType.startsWith('WHILE_') ? 'amber' : 'indigo',
+      }));
+      setCommands(blocks);
+      handleResetSimulation();
+      setStatusNotification('✓ Applied optimal solution sequence! Auto-solving trial...');
+      setTimeout(() => {
+        onLevelComplete(level.id, sol.gridCommands!.length);
+      }, 700);
+    } else if (level.mode === 'FLOWCHART_BUILDER' && sol.flowchartSlots) {
+      setExternalFlowchartSlots(sol.flowchartSlots);
+      setStatusNotification('✓ Auto-wired flowchart solution! All unit tests verified.');
+      setTimeout(() => {
+        onLevelComplete(level.id, level.optimalSteps);
+      }, 700);
+    } else if (level.mode === 'ALGORITHM_ARENA') {
+      setStatusNotification('✓ Executed optimal algorithm solution sequence!');
+      setTimeout(() => {
+        onLevelComplete(level.id, level.optimalSteps);
+      }, 600);
+    }
+  };
+
+  const handleLoadSolutionIntoPalette = () => {
+    const sol = LEVEL_SOLUTIONS[level.id];
+    if (!sol) return;
+
+    if (level.mode === 'GRID_BOT' && sol.gridCommands) {
+      const blocks: CommandBlock[] = sol.gridCommands.map((cmdType, idx) => ({
+        id: `sol_load_${cmdType}_${idx}_${Date.now()}`,
+        type: cmdType,
+        label: COMMAND_LABEL_MAP[cmdType] || cmdType,
+        iconName: cmdType,
+        color: cmdType.startsWith('IF_') || cmdType.startsWith('WHILE_') ? 'amber' : 'indigo',
+      }));
+      setCommands(blocks);
+      handleResetSimulation();
+      setStatusNotification('✓ Loaded solution commands into palette! Click "Execute Algorithm" to run.');
+    } else if (level.mode === 'FLOWCHART_BUILDER' && sol.flowchartSlots) {
+      setExternalFlowchartSlots(sol.flowchartSlots);
+      setStatusNotification('✓ Loaded solution blueprint into flowchart slots! Click "Run & Test Logic" to verify.');
+    }
   };
 
   return (
@@ -339,7 +453,36 @@ export const GameView: React.FC<GameViewProps> = ({
         </div>
 
         {/* Level Navigation & Shortcut Controls */}
-        <div className="flex items-center gap-2 self-stretch md:self-auto justify-between md:justify-end">
+        <div className="flex items-center gap-2 self-stretch md:self-auto justify-between md:justify-end flex-wrap">
+          {/* Solution Reveal Button */}
+          <button
+            onClick={() => {
+              sound.playClick();
+              setIsSolutionModalOpen(true);
+            }}
+            className={`px-3 py-1.5 rounded-lg border text-xs font-mono flex items-center gap-1.5 transition-all cursor-pointer ${
+              currentFailedAttempts >= 2
+                ? 'border-amber-400 bg-amber-950/70 text-amber-200 font-bold shadow-lg shadow-amber-950/50 hover:bg-amber-900/70 animate-pulse'
+                : 'border-slate-800 bg-slate-950 hover:bg-slate-800 text-slate-400'
+            }`}
+            title={
+              currentFailedAttempts >= 2
+                ? 'Solution Unlocked after 2 failed attempts!'
+                : `Solution unlocks after 2 failed attempts (${currentFailedAttempts}/2)`
+            }
+          >
+            <Lightbulb
+              className={`w-3.5 h-3.5 ${
+                currentFailedAttempts >= 2 ? 'fill-amber-400 text-amber-300' : 'text-slate-500'
+              }`}
+            />
+            <span>
+              {currentFailedAttempts >= 2
+                ? '💡 Reveal Solution'
+                : `Solution (${currentFailedAttempts}/2)`}
+            </span>
+          </button>
+
           <button
             onClick={() => {
               sound.playClick();
@@ -351,7 +494,7 @@ export const GameView: React.FC<GameViewProps> = ({
                 : 'border-slate-800 bg-slate-950 hover:bg-slate-800 text-slate-300'
             }`}
           >
-            <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
+            <HelpCircle className="w-3.5 h-3.5 text-amber-400" />
             <span>Hint</span>
           </button>
 
@@ -408,6 +551,56 @@ export const GameView: React.FC<GameViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Solution Unlocked Alert Banner */}
+      {currentFailedAttempts >= 2 && (
+        <div className="p-4 bg-gradient-to-r from-amber-950/70 via-slate-900 to-indigo-950/70 border border-amber-500/50 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xl animate-in fade-in">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
+              <Lightbulb className="w-5 h-5 fill-amber-400/30" />
+            </div>
+            <div>
+              <div className="text-xs font-mono font-bold text-amber-300 flex items-center gap-2">
+                <span>💡 SOLUTION UNLOCKED FOR LEVEL {level.id}</span>
+                <span className="text-[10px] px-2 py-0.5 bg-amber-950 text-amber-400 border border-amber-700/50 rounded-full font-mono">
+                  {currentFailedAttempts} Failed Attempts Recorded
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-0.5">
+                Step-by-step algorithmic explanation and automated solution blueprint are now unlocked.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 self-end sm:self-center">
+            <button
+              onClick={() => {
+                sound.playClick();
+                setIsSolutionModalOpen(true);
+              }}
+              className="px-4 py-2 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-lg text-xs font-mono shadow-md flex items-center gap-1.5 cursor-pointer transition-all active:scale-95"
+            >
+              <Lightbulb className="w-3.5 h-3.5 fill-slate-950" />
+              <span>Reveal Solution & Auto-Solve</span>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Status / Error Toast Notification */}
+      {statusNotification && (
+        <div className="p-3 bg-slate-900/95 border border-amber-500/40 text-slate-200 rounded-xl text-xs font-mono flex items-center justify-between gap-3 animate-in fade-in shadow-md">
+          <div className="flex items-center gap-2.5">
+            <AlertCircle className="w-4 h-4 text-amber-400 shrink-0" />
+            <span>{statusNotification}</span>
+          </div>
+          <button
+            onClick={() => setStatusNotification(null)}
+            className="p-1 text-slate-400 hover:text-white rounded"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Optional Hint Drawer */}
       {showHint && (
@@ -528,7 +721,7 @@ export const GameView: React.FC<GameViewProps> = ({
                 <button
                   onClick={handleClearCommands}
                   disabled={isSimulating || commands.length === 0}
-                  className="text-slate-500 hover:text-rose-400 disabled:opacity-30 transition-colors flex items-center gap-1"
+                  className="text-slate-500 hover:text-rose-400 disabled:opacity-30 transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>Clear All</span>
@@ -557,6 +750,10 @@ export const GameView: React.FC<GameViewProps> = ({
       {level.mode === 'FLOWCHART_BUILDER' && level.flowchartPuzzle && (
         <FlowchartPuzzleEditor
           puzzle={level.flowchartPuzzle}
+          externalPlacedSlots={externalFlowchartSlots}
+          failedAttempts={currentFailedAttempts}
+          onFailAttempt={() => handleRecordFail('Flowchart verification failed')}
+          onOpenSolution={() => setIsSolutionModalOpen(true)}
           onSuccess={(steps) => onLevelComplete(level.id, steps)}
         />
       )}
@@ -565,9 +762,21 @@ export const GameView: React.FC<GameViewProps> = ({
       {level.mode === 'ALGORITHM_ARENA' && level.algoArena && (
         <AlgorithmPlayground
           config={level.algoArena}
+          failedAttempts={currentFailedAttempts}
+          onFailAttempt={() => handleRecordFail('Algorithmic operation failed')}
           onSuccess={(steps) => onLevelComplete(level.id, steps)}
         />
       )}
+
+      {/* Solution Reveal Modal */}
+      <SolutionRevealModal
+        isOpen={isSolutionModalOpen}
+        onClose={() => setIsSolutionModalOpen(false)}
+        level={level}
+        failedAttempts={currentFailedAttempts}
+        onApplyAndSolve={handleApplySolutionAndSolve}
+        onLoadIntoWorkspace={handleLoadSolutionIntoPalette}
+      />
     </div>
   );
 };
