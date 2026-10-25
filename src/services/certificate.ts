@@ -232,24 +232,26 @@ export function renderCertificateToCanvas(
   // 11. Official Seal & Signatures
   const footerY = 1290;
 
-  // Left Signature: The Grand Compiler
-  ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
+  // Left Signature: Authorized Signatory - Kapil
+  ctx.strokeStyle = 'rgba(245, 158, 11, 0.4)';
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.moveTo(350, footerY);
-  ctx.lineTo(750, footerY);
+  ctx.moveTo(320, footerY);
+  ctx.lineTo(780, footerY);
   ctx.stroke();
 
-  ctx.fillStyle = '#e2e8f0';
-  ctx.font = 'italic 34px "Plus Jakarta Sans", sans-serif';
-  ctx.fillText('Ada Lovelace & Alan Turing', 550, footerY - 20);
+  ctx.fillStyle = '#fbbf24'; // elegant signature gold
+  ctx.font = 'italic 700 40px "Plus Jakarta Sans", sans-serif';
+  ctx.fillText('Kapil', 550, footerY - 18);
 
-  ctx.fillStyle = '#94a3b8';
-  ctx.font = '600 18px "Plus Jakarta Sans", sans-serif';
-  ctx.letterSpacing = '1px';
-  ctx.fillText('HIGH COUNCIL OF ALGORITHMS', 550, footerY + 30);
-  ctx.font = '400 15px "Plus Jakarta Sans", sans-serif';
-  ctx.fillText('CHIEF COMPILE ARCHITECT', 550, footerY + 55);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '700 18px "Plus Jakarta Sans", sans-serif';
+  ctx.letterSpacing = '1.5px';
+  ctx.fillText('KAPIL', 550, footerY + 28);
+
+  ctx.fillStyle = '#f59e0b';
+  ctx.font = '600 15px "Plus Jakarta Sans", sans-serif';
+  ctx.fillText('Knowledge Multiverse Architect', 550, footerY + 54);
 
   // Center Golden Digital Seal
   const sealX = width / 2;
@@ -300,7 +302,7 @@ export function renderCertificateToCanvas(
   ctx.fillStyle = '#64748b';
   ctx.font = '400 16px "Plus Jakarta Sans", sans-serif';
   ctx.fillText(
-    'AlgoRealm Certification Authority · Powered by Kapil · Permanent Hash Authenticated · Issued via Web Client Engine',
+    'AlgoRealm Certification Authority · Certified by Kapil - Knowledge Multiverse Architect · Official PNG Credential',
     width / 2,
     1480
   );

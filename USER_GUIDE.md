@@ -171,4 +171,5 @@ Big-O measures how algorithm runtime and memory grow as input size $N$ increases
 3. **Official PNG Certificate**:
    - Access the Certificate tab at any time.
    - Enter your preferred legal or gamer name.
+   - Conferred and signed by **Kapil - Knowledge Multiverse Architect**.
    - Click **"Download in PNG Format"** to save your crisp **2400 × 1600 px** official credential to your local drive!

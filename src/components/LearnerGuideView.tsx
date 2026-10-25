@@ -552,7 +552,7 @@ export const LearnerGuideView: React.FC<LearnerGuideViewProps> = ({
                   <p className="text-xs text-slate-300 leading-relaxed">
                     Once you complete the trials, you receive an official, high-resolution (2400 x 1600 px) Certificate of
                     Algorithmic Mastery. It features your custom coder name, completion date, star rating, cryptographic seal
-                    hash, and signatures.
+                    hash, and authorized signature by **Kapil - Knowledge Multiverse Architect**.
                   </p>
 
                   <button
