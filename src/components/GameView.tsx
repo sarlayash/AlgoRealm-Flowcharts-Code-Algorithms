@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, StepForward, RotateCcw, Lightbulb, Map, Trash2, Plus, FastForward, Check, ChevronLeft, ChevronRight, HelpCircle } from 'lucide-react';
+import { Play, Pause, StepForward, RotateCcw, Lightbulb, Map, Trash2, Plus, FastForward, Check, ChevronLeft, ChevronRight, HelpCircle, BookOpen } from 'lucide-react';
 import { LevelDefinition, PlayerProfile, CommandBlock, ActionCommandType, Direction } from '../types/game';
 import { GameCanvas } from './GameCanvas';
 import { FlowchartVisualizer } from './FlowchartVisualizer';
@@ -14,6 +14,7 @@ interface GameViewProps {
   onLevelComplete: (levelId: number, stepsUsed: number) => void;
   onGoToMap: () => void;
   onSelectLevel: (levelId: number) => void;
+  onOpenGuide?: () => void;
 }
 
 export const GameView: React.FC<GameViewProps> = ({
@@ -22,6 +23,7 @@ export const GameView: React.FC<GameViewProps> = ({
   onLevelComplete,
   onGoToMap,
   onSelectLevel,
+  onOpenGuide,
 }) => {
   // Command sequence for GRID_BOT levels
   const [commands, setCommands] = useState<CommandBlock[]>([]);
@@ -352,6 +354,19 @@ export const GameView: React.FC<GameViewProps> = ({
             <Lightbulb className="w-3.5 h-3.5 text-amber-400" />
             <span>Hint</span>
           </button>
+
+          {onOpenGuide && (
+            <button
+              onClick={() => {
+                sound.playClick();
+                onOpenGuide();
+              }}
+              className="px-3 py-1.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-lg text-xs font-mono text-indigo-300 hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-indigo-400" />
+              <span>Learner Guide</span>
+            </button>
+          )}
 
           <button
             onClick={() => {

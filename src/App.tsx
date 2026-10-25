@@ -12,6 +12,7 @@ import { Header } from './components/Header';
 import { TitleScreen } from './components/TitleScreen';
 import { OverworldMap } from './components/OverworldMap';
 import { GameView } from './components/GameView';
+import { LearnerGuideView } from './components/LearnerGuideView';
 import { BadgesModal } from './components/BadgesModal';
 import { CertificateModal } from './components/CertificateModal';
 import { VictoryModal } from './components/VictoryModal';
@@ -32,7 +33,7 @@ export default function App() {
     return null;
   });
 
-  const [currentView, setCurrentView] = useState<'TITLE' | 'GAME' | 'MAP'>('TITLE');
+  const [currentView, setCurrentView] = useState<'TITLE' | 'GAME' | 'MAP' | 'GUIDE'>('TITLE');
   const [activeLevelId, setActiveLevelId] = useState<number>(1);
 
   // Modals
@@ -223,6 +224,12 @@ export default function App() {
             onContinue={handleContinue}
             onResetProfile={handleResetProfile}
           />
+        ) : currentView === 'GUIDE' ? (
+          <LearnerGuideView
+            onBackToGame={() => setCurrentView('GAME')}
+            onGoToMap={() => setCurrentView('MAP')}
+            onOpenCertificate={() => setIsCertificateOpen(true)}
+          />
         ) : currentView === 'MAP' ? (
           <OverworldMap
             levels={LEVELS}
@@ -237,6 +244,7 @@ export default function App() {
             onLevelComplete={handleLevelComplete}
             onGoToMap={() => setCurrentView('MAP')}
             onSelectLevel={handleSelectLevel}
+            onOpenGuide={() => setCurrentView('GUIDE')}
           />
         )}
       </main>

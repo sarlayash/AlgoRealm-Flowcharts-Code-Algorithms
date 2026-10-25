@@ -1,11 +1,11 @@
 import React from 'react';
-import { Volume2, VolumeX, Music, Award, Map, Play, Shield } from 'lucide-react';
+import { Volume2, VolumeX, Music, Award, Map, Play, Shield, BookOpen } from 'lucide-react';
 import { sound } from '../services/sound';
 import { PlayerProfile } from '../types/game';
 
 interface HeaderProps {
-  currentView: 'TITLE' | 'GAME' | 'MAP' | 'BADGES' | 'CERTIFICATE';
-  setCurrentView: (view: 'TITLE' | 'GAME' | 'MAP' | 'BADGES' | 'CERTIFICATE') => void;
+  currentView: 'TITLE' | 'GAME' | 'MAP' | 'GUIDE' | 'BADGES' | 'CERTIFICATE';
+  setCurrentView: (view: 'TITLE' | 'GAME' | 'MAP' | 'GUIDE' | 'BADGES' | 'CERTIFICATE') => void;
   profile: PlayerProfile | null;
   onUpdateSound: (soundOn: boolean, musicOn: boolean) => void;
   onOpenCertificate: () => void;
@@ -78,6 +78,19 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <Map className="w-4 h-4" />
           <span>Realm Map (30)</span>
+        </button>
+
+        <button
+          onClick={() => {
+            sound.playClick();
+            setCurrentView('GUIDE');
+          }}
+          className={`hover:text-white transition-colors whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
+            currentView === 'GUIDE' ? 'text-indigo-400' : ''
+          }`}
+        >
+          <BookOpen className="w-4 h-4" />
+          <span>Learner Guide</span>
         </button>
 
         <button

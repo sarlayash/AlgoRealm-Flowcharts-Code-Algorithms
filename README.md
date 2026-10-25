@@ -2,9 +2,10 @@
 
 [![Deploy to GitHub Pages](https://github.com/sarlayash/AlgoRealm-Flowcharts-Code-Algorithms/actions/workflows/deploy.yml/badge.svg)](https://github.com/sarlayash/AlgoRealm-Flowcharts-Code-Algorithms/actions/workflows/deploy.yml)
 [![Live Game](https://img.shields.io/badge/Live-Play%20Game-indigo.svg)](https://sarlayash.github.io/AlgoRealm-Flowcharts-Code-Algorithms/)
+[![Learner Guide](https://img.shields.io/badge/Learner%20Guide-Read%20Handbook-emerald.svg)](./USER_GUIDE.md)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-> An interactive, 30-level video game web application that teaches programming fundamentals, flowchart architecture, data structures, and computational algorithms—from basics to advanced. Includes 14 unlockable achievement badges and an official high-resolution Certificate of Algorithmic Mastery downloadable directly in **PNG format**.
+> An interactive, 30-level video game web application that teaches programming fundamentals, flowchart architecture, data structures, and computational algorithms—from basics to advanced. Includes 14 unlockable achievement badges, an in-game [**Learner's User Guide**](./USER_GUIDE.md), and an official high-resolution Certificate of Algorithmic Mastery downloadable directly in **PNG format**.
 
 ---
 
